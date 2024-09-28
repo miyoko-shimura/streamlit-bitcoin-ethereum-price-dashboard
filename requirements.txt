@@ -3,3 +3,4 @@ geopandas
 pandas
 matplotlib
 yfinance
+mplfinance
