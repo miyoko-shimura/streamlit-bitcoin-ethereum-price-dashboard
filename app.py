@@ -60,4 +60,50 @@ if st.button('Fetch Data'):
         ax.set_title(f'{stock_symbol} Trading Volume', fontsize=16)
         ax.set_xlabel('Date', fontsize=12)
         ax.set_ylabel('Volume', fontsize=12)
-        ax.grid(
+        ax.grid(True, linestyle='--', alpha=0.7)
+        ax.tick_params(axis='both', which='major', labelsize=10)
+        fig.tight_layout()
+        st.pyplot(fig)
+
+        # Improved Basic statistics display
+        st.subheader('Basic Statistics')
+        
+        # Prepare the statistics
+        stats = {
+            'Latest Close': f"${df['Close'].iloc[-1]:.2f}",
+            'Period High': f"${df['High'].max():.2f}",
+            'Period Low': f"${df['Low'].min():.2f}",
+            'Average Close': f"${df['Close'].mean():.2f}",
+            'Total Volume': f"{df['Volume'].sum():,.0f}",
+            'Average Daily Return': f"{df['Daily Return'].mean():.2f}%",
+            'Return Volatility': f"{df['Daily Return'].std():.2f}%"
+        }
+        
+        # Create two columns for a more compact display
+        col1, col2 = st.columns(2)
+        
+        # Display the statistics in two columns
+        for i, (key, value) in enumerate(stats.items()):
+            if i % 2 == 0:
+                col1.metric(key, value)
+            else:
+                col2.metric(key, value)
+
+st.sidebar.markdown("""
+## About this App
+
+This app fetches stock price data and displays three informative charts:
+
+1. Closing Price Over Time
+2. Daily Percentage Change
+3. Trading Volume Over Time
+
+It also shows key statistics about the stock's performance.
+
+How to use:
+1. Enter a stock symbol (e.g., AAPL for Apple)
+2. Select the start and end dates
+3. Click 'Fetch Data'
+
+Data is retrieved from Yahoo Finance.
+""")
