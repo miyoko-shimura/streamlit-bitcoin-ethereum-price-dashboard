@@ -18,8 +18,13 @@ default_end_date = datetime.now().date()
 default_start_date = default_end_date - timedelta(days=365)
 
 # Create a date range slider
-start_date = st.date_input("Start Date", value=default_start_date, max_value=default_end_date)
-end_date = st.date_input("End Date", value=default_end_date, min_value=start_date, max_value=default_end_date)
+date_range = st.slider(
+    "Select Date Range",
+    value=(default_start_date, default_end_date),
+    format="YYYY-MM-DD"
+)
+start_date = date_range[0]
+end_date = date_range[1]
 
 # Fetch the historical price data for the selected cryptocurrency and date range
 crypto_data = yf.download(selected_symbol, start=start_date, end=end_date, interval="1d")
