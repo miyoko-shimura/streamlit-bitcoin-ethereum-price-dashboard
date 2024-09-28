@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import geopandas as gpd
 import matplotlib.pyplot as plt
 
 # Built-in data for major world cities
@@ -11,14 +10,10 @@ cities_data = {
     'population': [8419000, 8982000, 37400000, 2161000, 5312000, 12506000, 21540000, 6320000, 20076000, 20411000]
 }
 
-st.title('Easy Geo Visualization App')
+st.title('Simple Geo Visualization App')
 
-# Create DataFrame and GeoDataFrame
+# Create DataFrame
 df = pd.DataFrame(cities_data)
-gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:4326")
-
-# Create a world map
-world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
 
 # Visualization options
 st.sidebar.header('Visualization Options')
@@ -28,16 +23,24 @@ color_by = st.sidebar.selectbox('Color by', ['Uniform', 'Population'])
 
 # Plot
 fig, ax = plt.subplots(figsize=(12, 8))
-world.plot(ax=ax, color='lightgrey', edgecolor='black')
 
+# Create a simple world map (rectangle)
+ax.set_xlim(-180, 180)
+ax.set_ylim(-90, 90)
+ax.axhline(y=0, color='k', linestyle='-', linewidth=0.5)
+ax.axvline(x=0, color='k', linestyle='-', linewidth=0.5)
+ax.set_facecolor('lightblue')
+
+# Plot cities
 if color_by == 'Uniform':
-    gdf.plot(ax=ax, color='red', markersize=marker_size)
+    ax.scatter(df['longitude'], df['latitude'], s=marker_size, color='red')
 else:
-    gdf.plot(ax=ax, column='population', cmap='viridis', markersize=marker_size, legend=True, legend_kwds={'label': 'Population', 'orientation': 'horizontal'})
+    scatter = ax.scatter(df['longitude'], df['latitude'], s=marker_size, c=df['population'], cmap='viridis')
+    plt.colorbar(scatter, label='Population', orientation='horizontal', pad=0.08)
 
 if show_labels:
-    for idx, row in gdf.iterrows():
-        ax.annotate(row['name'], xy=(row['longitude'], row['latitude']), xytext=(3, 3), 
+    for _, row in df.iterrows():
+        ax.annotate(row['name'], (row['longitude'], row['latitude']), xytext=(3, 3), 
                     textcoords="offset points", fontsize=8)
 
 plt.title('Major World Cities')
@@ -51,7 +54,7 @@ st.write(df)
 st.sidebar.markdown("""
 ## About this app
 
-This app visualizes the locations of major world cities on a map. 
+This app visualizes the locations of major world cities on a simple world map. 
 You can customize the visualization using the options above.
 
 - Toggle city name labels
