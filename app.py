@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 # Set the page title and header
-st.set_page_config(page_title="BTC, ETH, and Gold Prices", page_icon=":moneybag:")
-st.title("Bitcoin, Ethereum, and Gold Price Dashboard")
+st.set_page_config(page_title="BTC and ETH Prices", page_icon=":moneybag:")
+st.title("Bitcoin and Ethereum Price Dashboard")
 
-# Define the list of symbols
-symbols = ["BTC-USD", "ETH-USD", "GC=F"]
+# Define the list of cryptocurrency symbols
+crypto_symbols = ["BTC-USD", "ETH-USD"]
 
-# Create a dropdown to select the asset
-selected_symbol = st.selectbox("Select Asset", symbols)
+# Create a dropdown to select the cryptocurrency
+selected_symbol = st.selectbox("Select Cryptocurrency", crypto_symbols)
 
 # Define the period options and their corresponding timedelta
 period_options = {
@@ -37,16 +37,16 @@ date_range = st.slider(
 start_date = date_range[0]
 end_date = date_range[1]
 
-# Fetch the historical price data for the selected asset and date range
-asset_data = yf.download(selected_symbol, start=start_date, end=end_date, interval="1d")
+# Fetch the historical price data for the selected cryptocurrency and date range
+crypto_data = yf.download(selected_symbol, start=start_date, end=end_date, interval="1d")
 
-if len(asset_data) > 0:
-    current_price = asset_data["Close"][-1]
-    st.metric(label=f"Current {selected_symbol} Price {'(USD)' if selected_symbol != 'GC=F' else '(USD/oz)'}", value=f"${current_price:.2f}")
+if len(crypto_data) > 0:
+    current_price = crypto_data["Close"][-1]
+    st.metric(label=f"Current {selected_symbol} Price (USD)", value=f"${current_price:.2f}")
 
     # Plot the historical price data
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(asset_data["Close"])
+    ax.plot(crypto_data["Close"])
     ax.set_xlabel("Date")
     ax.set_ylabel("Closing Price (USD)")
     ax.set_title(f"{selected_symbol} Price History ({start_date} to {end_date})")
@@ -55,6 +55,6 @@ if len(asset_data) > 0:
 
     # Display data in a table
     st.subheader("Historical Price Data")
-    st.write(asset_data)
+    st.write(crypto_data)
 else:
     st.warning(f"Failed to fetch {selected_symbol} price data.")
