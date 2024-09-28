@@ -1,69 +1,69 @@
 import streamlit as st
+import yfinance as yf
 import pandas as pd
-import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+import plotly.graph_objects as go
+from datetime import date, timedelta
 
-# Built-in data for major world cities
-cities_data = {
-    'name': ['ニューヨーク', 'ロンドン', '東京', 'パリ', 'シドニー', 'モスクワ', '北京', 'リオデジャネイロ', 'カイロ', 'ムンバイ'],
-    'latitude': [40.7128, 51.5074, 35.6762, 48.8566, -33.8688, 55.7558, 39.9042, -22.9068, 30.0444, 19.0760],
-    'longitude': [-74.0060, -0.1278, 139.6503, 2.3522, 151.2093, 37.6173, 116.4074, -43.1729, 31.2357, 72.8777],
-    'population': [8419000, 8982000, 37400000, 2161000, 5312000, 12506000, 21540000, 6320000, 20076000, 20411000]
-}
+st.title('株価分析アプリ')
 
-st.title('世界の主要都市ビジュアライゼーション')
+# 株式シンボルの入力
+stock_symbol = st.text_input('株式シンボルを入力してください（例：7203.T for Toyota）:', '7203.T')
 
-# Create DataFrame
-df = pd.DataFrame(cities_data)
+# 日付範囲の選択
+col1, col2 = st.columns(2)
+with col1:
+    start_date = st.date_input('開始日', date.today() - timedelta(days=365))
+with col2:
+    end_date = st.date_input('終了日', date.today())
 
-# Visualization options
-st.sidebar.header('表示オプション')
-show_labels = st.sidebar.checkbox('都市名を表示', value=True)
-marker_size = st.sidebar.slider('マーカーサイズ', min_value=10, max_value=300, value=100)
-color_by = st.sidebar.selectbox('色分け', ['単色', '人口'])
+if st.button('データを取得'):
+    # yfinanceを使用して株価データを取得
+    stock_data = yf.Ticker(stock_symbol)
+    df = stock_data.history(start=start_date, end=end_date)
 
-# Plot
-fig = plt.figure(figsize=(12, 8))
-ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+    if df.empty:
+        st.error('データを取得できませんでした。株式シンボルを確認してください。')
+    else:
+        # 株価チャートの作成
+        fig = go.Figure()
+        fig.add_trace(go.Candlestick(x=df.index,
+                                     open=df['Open'],
+                                     high=df['High'],
+                                     low=df['Low'],
+                                     close=df['Close'],
+                                     name='株価'))
+        fig.update_layout(title=f'{stock_symbol}の株価チャート',
+                          xaxis_title='日付',
+                          yaxis_title='価格')
+        st.plotly_chart(fig)
 
-# Add map features
-ax.add_feature(cfeature.LAND)
-ax.add_feature(cfeature.OCEAN)
-ax.add_feature(cfeature.COASTLINE)
-ax.add_feature(cfeature.BORDERS, linestyle=':')
+        # 基本的な統計情報
+        st.subheader('基本統計')
+        stats = pd.DataFrame({
+            '始値': df['Open'].iloc[-1],
+            '高値': df['High'].iloc[-1],
+            '安値': df['Low'].iloc[-1],
+            '終値': df['Close'].iloc[-1],
+            '出来高': df['Volume'].iloc[-1],
+            '期間最高値': df['High'].max(),
+            '期間最安値': df['Low'].min(),
+            '平均終値': df['Close'].mean()
+        }, index=['最新のデータ'])
+        st.write(stats.T)
 
-# Plot cities
-if color_by == '単色':
-    ax.scatter(df['longitude'], df['latitude'], s=marker_size, color='red', transform=ccrs.PlateCarree())
-else:
-    scatter = ax.scatter(df['longitude'], df['latitude'], s=marker_size, c=df['population'], 
-                         cmap='viridis', transform=ccrs.PlateCarree())
-    plt.colorbar(scatter, label='人口', orientation='horizontal', pad=0.08)
+        # 株価データの表示
+        st.subheader('株価データ')
+        st.write(df)
 
-if show_labels:
-    for _, row in df.iterrows():
-        ax.text(row['longitude'], row['latitude'], row['name'], fontsize=8, 
-                ha='right', va='bottom', transform=ccrs.PlateCarree())
-
-ax.set_global()
-plt.title('世界の主要都市')
-st.pyplot(fig)
-
-# Display the data
-st.subheader('都市データ:')
-st.write(df)
-
-# Add some information about the app
 st.sidebar.markdown("""
 ## このアプリについて
 
-このアプリは世界の主要都市の位置を世界地図上に表示します。
-上記のオプションを使用して、表示をカスタマイズできます。
+このアプリは、指定された株式の株価データを取得し、ローソク足チャートと基本的な統計情報を表示します。
 
-- 都市名ラベルの表示/非表示
-- マーカーサイズの調整
-- 単色または人口に基づく色分け
+使用方法:
+1. 株式シンボルを入力します（日本株の場合、シンボルの後に .T を付けます）
+2. 分析したい期間の開始日と終了日を選択します
+3. 「データを取得」ボタンをクリックします
 
-地図の下のデータテーブルには、各都市の詳細情報が表示されます。
+データはYahoo Financeから取得されます。
 """)
