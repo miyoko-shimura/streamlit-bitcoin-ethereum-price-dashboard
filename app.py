@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 # Set the page title and header
-st.set_page_config(page_title="Cryptocurrency Prices", page_icon=":moneybag:")
-st.title("Cryptocurrency Price Dashboard")
+st.set_page_config(page_title="BTC and ETH Prices", page_icon=":moneybag:")
+st.title("Bitcoin and Ethereum Price Dashboard")
 
 # Define the list of cryptocurrency symbols
-crypto_symbols = ["BTC-USD", "ETH-USD", "XRP-USD", "BCH-USD", "LTC-USD"]
+crypto_symbols = ["BTC-USD", "ETH-USD"]
 
 # Create a dropdown to select the cryptocurrency
 selected_symbol = st.selectbox("Select Cryptocurrency", crypto_symbols)
