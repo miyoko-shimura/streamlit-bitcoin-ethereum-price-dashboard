@@ -1,82 +1,71 @@
-import streamlit as st
 import yfinance as yf
+import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-from datetime import date, timedelta
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-st.title('Simple Stock Analysis App')
+def get_stock_price(ticker):
+    stock = yf.Ticker(ticker)
+    history = stock.history(period="1y")
+    return history
 
-# Stock symbol input
-stock_symbol = st.text_input('Enter a stock symbol (e.g., AAPL for Apple):', 'AAPL')
+def calculate_rsi(data, window=14):
+    delta = data['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
 
-# Date range selection
-col1, col2 = st.columns(2)
-with col1:
-    start_date = st.date_input('Start date', date.today() - timedelta(days=365))
-with col2:
-    end_date = st.date_input('End date', date.today())
+def calculate_macd(data, short_window=12, long_window=26, signal_window=9):
+    short_ema = data['Close'].ewm(span=short_window, adjust=False).mean()
+    long_ema = data['Close'].ewm(span=long_window, adjust=False).mean()
+    macd = short_ema - long_ema
+    signal = macd.ewm(span=signal_window, adjust=False).mean()
+    histogram = macd - signal
+    return macd, signal, histogram
 
-if st.button('Fetch Data'):
-    # Fetch stock data using yfinance
-    stock_data = yf.Ticker(stock_symbol)
-    df = stock_data.history(start=start_date, end=end_date)
+def main():
+    st.title("Stock Price App with Technical Indicators")
 
-    if df.empty:
-        st.error('Unable to fetch data. Please check the stock symbol.')
-    else:
-        # Simplified Closing Price Chart
-        st.subheader(f'{stock_symbol} Stock Price Chart')
-        fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(df.index, df['Close'], color='#1f77b4', linewidth=2)
+    ticker = st.text_input("Enter a stock ticker symbol (e.g., AAPL, GOOGL):")
+    
+    if ticker:
+        data = get_stock_price(ticker)
         
-        # Remove top and right spines
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        
-        # Set labels and title
-        ax.set_xlabel('Date', fontsize=12)
-        ax.set_ylabel('Price ($)', fontsize=12)
-        
-        # Adjust tick parameters
-        ax.tick_params(axis='both', which='major', labelsize=10)
-        
-        # Add light grid
-        ax.grid(True, linestyle='--', alpha=0.3)
-        
-        # Rotate and align the tick labels so they look better
-        fig.autofmt_xdate()
-        
-        # Use tight layout
-        fig.tight_layout()
-        
-        st.pyplot(fig)
+        if not data.empty:
+            st.subheader(f"{ticker} Stock Price and Technical Indicators (Past Year)")
+            
+            # Calculate technical indicators
+            data['RSI'] = calculate_rsi(data)
+            data['MACD'], data['Signal'], data['Histogram'] = calculate_macd(data)
+            
+            # Create subplots
+            fig = make_subplots(rows=3, cols=1, shared_xaxes=True, 
+                                vertical_spacing=0.05, 
+                                row_heights=[0.5, 0.25, 0.25])
+            
+            # Price chart
+            fig.add_trace(go.Candlestick(x=data.index, open=data['Open'], high=data['High'],
+                                         low=data['Low'], close=data['Close'], name='Price'),
+                          row=1, col=1)
+            
+            # RSI
+            fig.add_trace(go.Scatter(x=data.index, y=data['RSI'], name='RSI'), row=2, col=1)
+            fig.add_hline(y=70, line_dash="dash", line_color="red", row=2, col=1)
+            fig.add_hline(y=30, line_dash="dash", line_color="green", row=2, col=1)
+            
+            # MACD
+            fig.add_trace(go.Scatter(x=data.index, y=data['MACD'], name='MACD'), row=3, col=1)
+            fig.add_trace(go.Scatter(x=data.index, y=data['Signal'], name='Signal'), row=3, col=1)
+            fig.add_trace(go.Bar(x=data.index, y=data['Histogram'], name='Histogram'), row=3, col=1)
+            
+            fig.update_layout(height=900, title=f"{ticker} Stock Analysis", xaxis_rangeslider_visible=False)
+            st.plotly_chart(fig)
+            
+            st.subheader("Data Statistics")
+            st.write(data['Close'].describe())
+        else:
+            st.error("Failed to fetch data. Please check if the ticker symbol is correct.")
 
-        # Basic statistics
-        st.subheader('Basic Statistics')
-        stats = {
-            'Latest Close': f"${df['Close'].iloc[-1]:.2f}",
-            'Period High': f"${df['High'].max():.2f}",
-            'Period Low': f"${df['Low'].min():.2f}",
-            'Average Close': f"${df['Close'].mean():.2f}",
-        }
-        
-        # Display statistics
-        col1, col2 = st.columns(2)
-        for i, (key, value) in enumerate(stats.items()):
-            if i % 2 == 0:
-                col1.metric(key, value)
-            else:
-                col2.metric(key, value)
-
-st.sidebar.markdown("""
-## About this App
-
-This app fetches stock price data and displays a simple chart of the closing price over time. It also shows some basic statistics about the stock's performance.
-
-How to use:
-1. Enter a stock symbol (e.g., AAPL for Apple)
-2. Select the start and end dates
-3. Click 'Fetch Data'
-
-Data is retrieved from Yahoo Finance.
-""")
+if __name__ == "__main__":
+    main()
