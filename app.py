@@ -1,27 +1,30 @@
-import streamlit as st
 import yfinance as yf
 import matplotlib.pyplot as plt
+import streamlit as st
 
-def get_stock_price(ticker, start_date, end_date):
-    stock_data = yf.download(ticker, start=start_date, end=end_date)
-    return stock_data['Close']
+# Set the page title and header
+st.set_page_config(page_title="Stock Price History", page_icon=":chart_with_upwards_trend:")
+st.title("Stock Price History")
 
-def plot_stock_price(prices, ticker):
-    plt.figure(figsize=(10, 5))
-    plt.plot(prices.index, prices.values)
-    plt.title(f'{ticker} Stock Price')
-    plt.xlabel('Date')
-    plt.ylabel('Price (USD)')
-    plt.grid(True)
-    return plt
+# Get the stock ticker symbol from the user
+ticker_symbol = st.text_input("Enter the stock ticker symbol (e.g., AAPL, GOOGL):")
 
-st.title('Simple Stock Price App')
+if ticker_symbol:
+    # Download the stock data
+    stock_data = yf.download(ticker_symbol)
 
-ticker = st.text_input('Enter a stock ticker (e.g., AAPL, GOOGL):', 'AAPL')
-start_date = st.date_input('Start date')
-end_date = st.date_input('End date')
-
-if st.button('Show Stock Price'):
-    prices = get_stock_price(ticker, start_date, end_date)
-    fig = plot_stock_price(prices, ticker)
-    st.pyplot(fig)
+    if len(stock_data) > 0:
+        # Plot the closing price history
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.plot(stock_data["Close"])
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Closing Price (USD)")
+        ax.set_title(f"{ticker_symbol} Stock Price History")
+        ax.grid()
+        
+        # Display the plot in the Streamlit app
+        st.pyplot(fig)
+    else:
+        st.warning(f"No data found for the ticker symbol: {ticker_symbol}")
+else:
+    st.info("Please enter a stock ticker symbol to view its price history.")
