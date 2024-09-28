@@ -13,14 +13,25 @@ crypto_symbols = ["BTC-USD", "ETH-USD"]
 # Create a dropdown to select the cryptocurrency
 selected_symbol = st.selectbox("Select Cryptocurrency", crypto_symbols)
 
-# Set the default date range to the past year
-default_end_date = datetime.now().date()
-default_start_date = default_end_date - timedelta(days=365*3)
+# Define the period options and their corresponding timedelta
+period_options = {
+    "Last 6 Months": timedelta(days=180),
+    "Last 1 Year": timedelta(days=365),
+    "Last 2 Years": timedelta(days=730),
+    "Last 3 Years": timedelta(days=1095)
+}
+
+# Create a dropdown to select the period
+selected_period = st.selectbox("Select Period", list(period_options.keys()))
+
+# Set the end date to the current date and calculate the start date based on the selected period
+end_date = datetime.now().date()
+start_date = end_date - period_options[selected_period]
 
 # Create a date range slider
 date_range = st.slider(
     "Select Date Range",
-    value=(default_start_date, default_end_date),
+    value=(start_date, end_date),
     format="YYYY-MM-DD"
 )
 start_date = date_range[0]
