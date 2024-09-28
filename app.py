@@ -15,7 +15,7 @@ selected_symbol = st.selectbox("Select Cryptocurrency", crypto_symbols)
 
 # Set the default date range to the past year
 default_end_date = datetime.now().date()
-default_start_date = default_end_date - timedelta(days=365*5)
+default_start_date = default_end_date - timedelta(days=365*3)
 
 # Create a date range slider
 date_range = st.slider(
