@@ -1,8 +1,9 @@
 import yfinance as yf
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
+import mplfinance as mpf
 
 def get_stock_price(ticker):
     stock = yf.Ticker(ticker)
@@ -24,48 +25,62 @@ def calculate_macd(data, short_window=12, long_window=26, signal_window=9):
     histogram = macd - signal
     return macd, signal, histogram
 
-def main():
-    st.title("Stock Price App with Technical Indicators")
+def plot_stock_data(data):
+    # Create subplots
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 16), sharex=True)
+    
+    # Plot candlestick chart
+    mpf.plot(data, type='candle', ax=ax1, volume=False, style='yahoo')
+    ax1.set_title('Stock Price')
+    ax1.set_ylabel('Price')
+    
+    # Plot RSI
+    ax2.plot(data.index, data['RSI'], label='RSI')
+    ax2.axhline(70, color='red', linestyle='--')
+    ax2.axhline(30, color='green', linestyle='--')
+    ax2.set_title('RSI')
+    ax2.set_ylabel('RSI')
+    ax2.legend()
+    
+    # Plot MACD
+    ax3.plot(data.index, data['MACD'], label='MACD')
+    ax3.plot(data.index, data['Signal'], label='Signal')
+    ax3.bar(data.index, data['Histogram'], label='Histogram')
+    ax3.set_title('MACD')
+    ax3.set_ylabel('MACD')
+    ax3.legend()
+    
+    # Format x-axis
+    date_formatter = DateFormatter("%Y-%m-%d")
+    ax3.xaxis.set_major_formatter(date_formatter)
+    fig.autofmt_xdate()
+    
+    plt.tight_layout()
+    return fig
 
-    ticker = st.text_input("Enter a stock ticker symbol (e.g., AAPL, GOOGL):")
+def main():
+    st.title("株価表示アプリ（テクニカル指標付き）")
+
+    ticker = st.text_input("株式のティッカーシンボルを入力してください（例：AAPL, GOOGL）:")
     
     if ticker:
         data = get_stock_price(ticker)
         
         if not data.empty:
-            st.subheader(f"{ticker} Stock Price and Technical Indicators (Past Year)")
+            st.subheader(f"{ticker}の株価推移とテクニカル指標（過去1年間）")
             
             # Calculate technical indicators
             data['RSI'] = calculate_rsi(data)
             data['MACD'], data['Signal'], data['Histogram'] = calculate_macd(data)
             
-            # Create subplots
-            fig = make_subplots(rows=3, cols=1, shared_xaxes=True, 
-                                vertical_spacing=0.05, 
-                                row_heights=[0.5, 0.25, 0.25])
+            # Plot the data
+            fig = plot_stock_data(data)
+            st.pyplot(fig)
             
-            # Price chart
-            fig.add_trace(go.Candlestick(x=data.index, open=data['Open'], high=data['High'],
-                                         low=data['Low'], close=data['Close'], name='Price'),
-                          row=1, col=1)
-            
-            # RSI
-            fig.add_trace(go.Scatter(x=data.index, y=data['RSI'], name='RSI'), row=2, col=1)
-            fig.add_hline(y=70, line_dash="dash", line_color="red", row=2, col=1)
-            fig.add_hline(y=30, line_dash="dash", line_color="green", row=2, col=1)
-            
-            # MACD
-            fig.add_trace(go.Scatter(x=data.index, y=data['MACD'], name='MACD'), row=3, col=1)
-            fig.add_trace(go.Scatter(x=data.index, y=data['Signal'], name='Signal'), row=3, col=1)
-            fig.add_trace(go.Bar(x=data.index, y=data['Histogram'], name='Histogram'), row=3, col=1)
-            
-            fig.update_layout(height=900, title=f"{ticker} Stock Analysis", xaxis_rangeslider_visible=False)
-            st.plotly_chart(fig)
-            
-            st.subheader("Data Statistics")
+            st.subheader("データ統計")
             st.write(data['Close'].describe())
         else:
-            st.error("Failed to fetch data. Please check if the ticker symbol is correct.")
+            st.error("データを取得できませんでした。ティッカーシンボルが正しいか確認してください。")
 
 if __name__ == "__main__":
     main()
