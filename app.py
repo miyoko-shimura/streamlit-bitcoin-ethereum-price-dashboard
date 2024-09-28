@@ -1,35 +1,44 @@
 import yfinance as yf
 import streamlit as st
 import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
 
 # Set the page title and header
-st.set_page_config(page_title="Bitcoin Price", page_icon=":moneybag:")
-st.title("Bitcoin Price Dashboard")
+st.set_page_config(page_title="Cryptocurrency Prices", page_icon=":moneybag:")
+st.title("Cryptocurrency Price Dashboard")
 
-# Define the Bitcoin ticker symbol
-bitcoin_symbol = "BTC-USD"
+# Define the list of cryptocurrency symbols
+crypto_symbols = ["BTC-USD", "ETH-USD", "XRP-USD", "BCH-USD", "LTC-USD"]
 
-# Create a slider to select the number of days
-min_days = 1
-max_days = 365 * 5  # 5 years
-default_days = 365  # 1 year
-selected_days = st.slider("Select Number of Days", min_value=min_days, max_value=max_days, value=default_days)
+# Create a dropdown to select the cryptocurrency
+selected_symbol = st.selectbox("Select Cryptocurrency", crypto_symbols)
 
-# Fetch the historical Bitcoin price data
-bitcoin_data = yf.download(bitcoin_symbol, period=f"{selected_days}d", interval="1d")
+# Set the default date range to the past year
+default_end_date = datetime.now().date()
+default_start_date = default_end_date - timedelta(days=365)
 
-if len(bitcoin_data) > 0:
-    current_price = bitcoin_data["Close"][-1]
-    st.metric(label="Current Bitcoin Price (USD)", value=f"${current_price:.2f}")
+# Create a date range slider
+start_date = st.date_input("Start Date", value=default_start_date, max_value=default_end_date)
+end_date = st.date_input("End Date", value=default_end_date, min_value=start_date, max_value=default_end_date)
+
+# Fetch the historical price data for the selected cryptocurrency and date range
+crypto_data = yf.download(selected_symbol, start=start_date, end=end_date, interval="1d")
+
+if len(crypto_data) > 0:
+    current_price = crypto_data["Close"][-1]
+    st.metric(label=f"Current {selected_symbol} Price (USD)", value=f"${current_price:.2f}")
 
     # Plot the historical price data
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(bitcoin_data["Close"])
+    ax.plot(crypto_data["Close"])
     ax.set_xlabel("Date")
     ax.set_ylabel("Closing Price (USD)")
-    ax.set_title(f"Bitcoin Price History ({selected_days} Days)")
+    ax.set_title(f"{selected_symbol} Price History ({start_date} to {end_date})")
     ax.grid()
     st.pyplot(fig)
 
+    # Display data in a table
+    st.subheader("Historical Price Data")
+    st.write(crypto_data)
 else:
-    st.warning("Failed to fetch Bitcoin price data.")
+    st.warning(f"Failed to fetch {selected_symbol} price data.")
