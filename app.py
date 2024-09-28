@@ -50,6 +50,13 @@ if len(crypto_data) > 0:
     ax.set_xlabel("Date")
     ax.set_ylabel("Closing Price (USD)")
     ax.set_title(f"{selected_symbol} Price History ({start_date} to {end_date})")
+    
+    # Remove the frame
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    
     ax.grid()
     st.pyplot(fig)
 
