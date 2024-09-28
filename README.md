@@ -1,4 +1,4 @@
-# Bitcoin and Ethereum Price Dashboard
+# Bitcoin and Ethereum Price Dashboard App
 
 This Streamlit app provides a simple and interactive dashboard for viewing historical price data of Bitcoin (BTC) and Ethereum (ETH).
 
