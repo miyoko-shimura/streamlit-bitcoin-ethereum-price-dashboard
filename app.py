@@ -1,87 +1,62 @@
 import streamlit as st
-import geopandas as gpd
 import pandas as pd
+import geopandas as gpd
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-# Load world map data
+# Built-in data for major world cities
+cities_data = {
+    'name': ['New York', 'London', 'Tokyo', 'Paris', 'Sydney', 'Moscow', 'Beijing', 'Rio de Janeiro', 'Cairo', 'Mumbai'],
+    'latitude': [40.7128, 51.5074, 35.6762, 48.8566, -33.8688, 55.7558, 39.9042, -22.9068, 30.0444, 19.0760],
+    'longitude': [-74.0060, -0.1278, 139.6503, 2.3522, 151.2093, 37.6173, 116.4074, -43.1729, 31.2357, 72.8777],
+    'population': [8419000, 8982000, 37400000, 2161000, 5312000, 12506000, 21540000, 6320000, 20076000, 20411000]
+}
+
+st.title('Easy Geo Visualization App')
+
+# Create DataFrame and GeoDataFrame
+df = pd.DataFrame(cities_data)
+gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:4326")
+
+# Create a world map
 world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
 
-# Load population data (you would replace this with your actual data source)
-population_data = pd.DataFrame({
-    'country': ['United States', 'China', 'India', 'Brazil', 'Russia', 'Indonesia', 'Pakistan', 'Nigeria', 'Bangladesh', 'Mexico'],
-    'population': [331002651, 1439323776, 1380004385, 212559417, 145934462, 273523615, 220892340, 206139589, 164689383, 128932753],
-    'area_km2': [9833517, 9596961, 3287263, 8515767, 17098246, 1904569, 881912, 923768, 147570, 1964375]
-})
+# Visualization options
+st.sidebar.header('Visualization Options')
+show_labels = st.sidebar.checkbox('Show City Names', value=True)
+marker_size = st.sidebar.slider('Marker Size', min_value=10, max_value=300, value=100)
+color_by = st.sidebar.selectbox('Color by', ['Uniform', 'Population'])
 
-# Calculate population density
-population_data['density'] = population_data['population'] / population_data['area_km2']
-
-# Merge with world map data
-world = world.merge(population_data, how='left', left_on=['name'], right_on=['country'])
-
-# Streamlit app
-st.title('World Population Density Visualization')
-
-# Create a choropleth map
-st.subheader('1. World Population Density Map')
-fig, ax = plt.subplots(figsize=(15, 10))
-world.plot(column='density', ax=ax, legend=True,
-           legend_kwds={'label': 'Population Density (people/km²)', 'orientation': 'horizontal'},
-           missing_kwds={'color': 'lightgrey'})
-ax.set_axis_off()
-st.pyplot(fig)
-
-# Bar chart
-st.subheader('2. Population by Country')
-fig, ax = plt.subplots(figsize=(12, 6))
-population_data.sort_values('population', ascending=False).plot(x='country', y='population', kind='bar', ax=ax)
-plt.xticks(rotation=45, ha='right')
-plt.ylabel('Population')
-st.pyplot(fig)
-
-# Scatter plot
-st.subheader('3. Population vs Area')
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.scatterplot(data=population_data, x='area_km2', y='population', hue='country', ax=ax)
-plt.xscale('log')
-plt.yscale('log')
-plt.xlabel('Area (km²)')
-plt.ylabel('Population')
-st.pyplot(fig)
-
-# Pie chart
-st.subheader('4. Population Distribution')
+# Plot
 fig, ax = plt.subplots(figsize=(12, 8))
-population_data.plot.pie(y='population', labels=population_data['country'], autopct='%1.1f%%', ax=ax)
-plt.ylabel('')
+world.plot(ax=ax, color='lightgrey', edgecolor='black')
+
+if color_by == 'Uniform':
+    gdf.plot(ax=ax, color='red', markersize=marker_size)
+else:
+    gdf.plot(ax=ax, column='population', cmap='viridis', markersize=marker_size, legend=True, legend_kwds={'label': 'Population', 'orientation': 'horizontal'})
+
+if show_labels:
+    for idx, row in gdf.iterrows():
+        ax.annotate(row['name'], xy=(row['longitude'], row['latitude']), xytext=(3, 3), 
+                    textcoords="offset points", fontsize=8)
+
+plt.title('Major World Cities')
 st.pyplot(fig)
 
-# Histogram
-st.subheader('5. Distribution of Population Density')
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.histplot(data=population_data, x='density', bins=20, kde=True, ax=ax)
-plt.xlabel('Population Density (people/km²)')
-st.pyplot(fig)
+# Display the data
+st.subheader('City Data:')
+st.write(df)
 
-# Display data table
-st.subheader('Population Density Data')
-st.dataframe(population_data)
+# Add some information about the app
+st.sidebar.markdown("""
+## About this app
 
-# Allow users to add new country data
-st.subheader('Add New Country Data')
-new_country = st.text_input('Country Name')
-new_population = st.number_input('Population', min_value=0)
-new_area = st.number_input('Area (km²)', min_value=0.0)
+This app visualizes the locations of major world cities on a map. 
+You can customize the visualization using the options above.
 
-if st.button('Add Country'):
-    new_density = new_population / new_area if new_area > 0 else 0
-    new_data = pd.DataFrame({
-        'country': [new_country],
-        'population': [new_population],
-        'area_km2': [new_area],
-        'density': [new_density]
-    })
-    population_data = pd.concat([population_data, new_data], ignore_index=True)
-    st.success(f'Added {new_country} to the dataset!')
-    st.dataframe(population_data)
+- Toggle city name labels
+- Adjust the size of the markers
+- Color the markers uniformly or by population
+
+The data table below the map shows detailed information about each city.
+""")
