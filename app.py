@@ -15,11 +15,14 @@ selected_symbol = st.selectbox("Select Cryptocurrency", crypto_symbols)
 
 # Define the period options and their corresponding timedelta
 period_options = {
+    "Last 1 Months": timedelta(days=30),
+    "Last 3 Months": timedelta(days=60),
     "Last 6 Months": timedelta(days=180),
     "Last 1 Year": timedelta(days=365),
     "Last 2 Years": timedelta(days=365*2),
     "Last 3 Years": timedelta(days=356*3),
-    "Last 5 Years": timedelta(days=365*5)
+    "Last 5 Years": timedelta(days=365*5),
+    "Last 10 Years": timedelta(days=365*10)
 }
 
 # Create a dropdown to select the period
